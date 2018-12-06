@@ -141,6 +141,10 @@ class Ui(interface.Ui):
             self.windows.open_all()
             statuswin = self.windows.status()
             statuswin.set_status("loading")
+            
+            self.windows.watch().set_height(15)
+            self.windows.status().set_height(1)
+            self.windows.status().set_width(60)
 
             log.Log.set_logger(log.WindowLogger(
                 opts.Options.get('debug_window_level'), self.windows.log()))
@@ -449,6 +453,12 @@ class Window(interface.Window):
         if height <= 0:
             height = 1
         self.command('resize %i' % height)
+        
+    def set_width(self, width):
+        width = int(width)
+        if width <= 0:
+            width =1
+        self.command('vertical resize %i' % width)    
 
     def write(self, msg, return_focus=True, after="normal G"):
         self._buffer.write(msg, return_focus, lambda: self.command(after))
@@ -634,8 +644,22 @@ class StatusWindow(Window):
             self.set_height(6)
 
     def set_status(self, status):
-        self.insert("Status: %s" % str(status), 0, True)
+        if str(status) == "stopped":
+            status = "■"
+        if str(status) == "running":
+            status = "▶"
+        if str(status) == "break":
+            status = "▌▌"
 
+        keys = util.Keymapper()
+
+        output = " " + str(status) + " "
+        output += "[%s Start] " % (keys.run_key())
+        output += "[%s Stop] " % (keys.close_key())
+        output += "[:help Vdebug]"
+
+        self.insert(output, 0, True)
+        
     def mark_as_stopped(self):
         self.set_status("stopped")
         self.insert("Not connected", 2, True)
